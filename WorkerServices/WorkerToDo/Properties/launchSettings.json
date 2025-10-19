@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WorkerToDo": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
