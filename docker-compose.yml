@@ -86,6 +86,26 @@ services:
     networks:
       - todo-network
 
+  worker-todo:
+    build:
+      context: .
+      dockerfile: WorkerServices/WorkerToDo/Dockerfile
+    container_name: todo-worker-todo
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=todoapp;Username=postgres;Password=postgres
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - todo-network
+
 volumes:
   postgres_data:
   rabbitmq_data:
