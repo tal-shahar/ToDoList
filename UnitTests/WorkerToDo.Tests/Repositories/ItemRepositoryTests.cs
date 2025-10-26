@@ -249,6 +249,7 @@ namespace WorkerToDo.Tests.Repositories
         public void Dispose()
         {
             _context.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

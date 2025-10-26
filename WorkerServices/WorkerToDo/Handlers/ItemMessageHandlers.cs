@@ -7,7 +7,7 @@ using WorkerServices.WorkerToDo.Repositories;
 
 namespace WorkerServices.WorkerToDo.Handlers
 {
-    public class CreateItemMessageHandler : IMessageHandler<SharedLibreries.Contracts.CreateItemRequest, SharedLibreries.Contracts.CreateItemResponse>
+    public class CreateItemMessageHandler : IMessageHandler<SharedLibreries.Contracts.CreateItemRequest, CreateItemResponse>
     {
         private readonly IItemRepository _itemRepository;
         private readonly ILogger<CreateItemMessageHandler> _logger;
@@ -18,7 +18,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             _logger = logger;
         }
 
-        public async Task<SharedLibreries.Contracts.CreateItemResponse> HandleAsync(SharedLibreries.Contracts.CreateItemRequest request)
+        public async Task<CreateItemResponse> HandleAsync(SharedLibreries.Contracts.CreateItemRequest request)
         {
             try
             {
@@ -39,7 +39,7 @@ namespace WorkerServices.WorkerToDo.Handlers
                 await _itemRepository.AddAsync(item);
 
                 _logger.LogInformation("Item created successfully with ID {ItemId} for user {UserId}", item.Id, item.UserId);
-                return new SharedLibreries.Contracts.CreateItemResponse
+                return new CreateItemResponse
                 {
                     IsSuccess = true,
                     ItemId = item.Id,
@@ -50,7 +50,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating item for user {UserId}", request.UserId);
-                return new SharedLibreries.Contracts.CreateItemResponse
+                return new CreateItemResponse
                 {
                     IsSuccess = false,
                     ErrorMessage = ex.Message
@@ -59,7 +59,7 @@ namespace WorkerServices.WorkerToDo.Handlers
         }
     }
 
-    public class GetItemMessageHandler : IMessageHandler<SharedLibreries.Contracts.GetItemRequest, SharedLibreries.Contracts.GetItemResponse>
+    public class GetItemMessageHandler : IMessageHandler<GetItemRequest, GetItemResponse>
     {
         private readonly IItemRepository _itemRepository;
         private readonly ILogger<GetItemMessageHandler> _logger;
@@ -70,7 +70,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             _logger = logger;
         }
 
-        public async Task<SharedLibreries.Contracts.GetItemResponse> HandleAsync(SharedLibreries.Contracts.GetItemRequest request)
+        public async Task<GetItemResponse> HandleAsync(GetItemRequest request)
         {
             try
             {
@@ -79,14 +79,14 @@ namespace WorkerServices.WorkerToDo.Handlers
                 var item = await _itemRepository.GetByIdAsync(request.ItemId);
                 if (item == null)
                 {
-                    return new SharedLibreries.Contracts.GetItemResponse
+                    return new GetItemResponse
                     {
                         IsSuccess = false,
                         ErrorMessage = $"Item with ID {request.ItemId} not found."
                     };
                 }
 
-                return new SharedLibreries.Contracts.GetItemResponse
+                return new GetItemResponse
                 {
                     IsSuccess = true,
                     Item = new ItemResponse
@@ -106,7 +106,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting item with ID {ItemId}", request.ItemId);
-                return new SharedLibreries.Contracts.GetItemResponse
+                return new GetItemResponse
                 {
                     IsSuccess = false,
                     ErrorMessage = ex.Message
@@ -115,7 +115,7 @@ namespace WorkerServices.WorkerToDo.Handlers
         }
     }
 
-    public class GetAllItemsMessageHandler : IMessageHandler<SharedLibreries.Contracts.GetAllItemsRequest, SharedLibreries.Contracts.GetAllItemsResponse>
+    public class GetAllItemsMessageHandler : IMessageHandler<GetAllItemsRequest, GetAllItemsResponse>
     {
         private readonly IItemRepository _itemRepository;
         private readonly ILogger<GetAllItemsMessageHandler> _logger;
@@ -126,7 +126,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             _logger = logger;
         }
 
-        public async Task<SharedLibreries.Contracts.GetAllItemsResponse> HandleAsync(SharedLibreries.Contracts.GetAllItemsRequest request)
+        public async Task<GetAllItemsResponse> HandleAsync(GetAllItemsRequest request)
         {
             try
             {
@@ -146,7 +146,7 @@ namespace WorkerServices.WorkerToDo.Handlers
                     DeletedAt = i.DeletedAt
                 }).ToList();
 
-                return new SharedLibreries.Contracts.GetAllItemsResponse
+                return new GetAllItemsResponse
                 {
                     IsSuccess = true,
                     Items = itemResponses
@@ -155,7 +155,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting all items");
-                return new SharedLibreries.Contracts.GetAllItemsResponse
+                return new GetAllItemsResponse
                 {
                     IsSuccess = false,
                     ErrorMessage = ex.Message
@@ -164,7 +164,7 @@ namespace WorkerServices.WorkerToDo.Handlers
         }
     }
 
-    public class GetUserItemsMessageHandler : IMessageHandler<SharedLibreries.Contracts.GetUserItemsRequest, SharedLibreries.Contracts.GetUserItemsResponse>
+    public class GetUserItemsMessageHandler : IMessageHandler<GetUserItemsRequest, GetUserItemsResponse>
     {
         private readonly IItemRepository _itemRepository;
         private readonly ILogger<GetUserItemsMessageHandler> _logger;
@@ -175,7 +175,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             _logger = logger;
         }
 
-        public async Task<SharedLibreries.Contracts.GetUserItemsResponse> HandleAsync(SharedLibreries.Contracts.GetUserItemsRequest request)
+        public async Task<GetUserItemsResponse> HandleAsync(GetUserItemsRequest request)
         {
             try
             {
@@ -198,7 +198,7 @@ namespace WorkerServices.WorkerToDo.Handlers
                     DeletedAt = i.DeletedAt
                 }).ToList();
 
-                return new SharedLibreries.Contracts.GetUserItemsResponse
+                return new GetUserItemsResponse
                 {
                     IsSuccess = true,
                     Items = itemResponses
@@ -207,7 +207,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting items for user {UserId}", request.UserId);
-                return new SharedLibreries.Contracts.GetUserItemsResponse
+                return new GetUserItemsResponse
                 {
                     IsSuccess = false,
                     ErrorMessage = ex.Message
@@ -216,7 +216,7 @@ namespace WorkerServices.WorkerToDo.Handlers
         }
     }
 
-    public class UpdateItemMessageHandler : IMessageHandler<SharedLibreries.Contracts.UpdateItemRequest, SharedLibreries.Contracts.UpdateItemResponse>
+    public class UpdateItemMessageHandler : IMessageHandler<SharedLibreries.Contracts.UpdateItemRequest, UpdateItemResponse>
     {
         private readonly IItemRepository _itemRepository;
         private readonly ILogger<UpdateItemMessageHandler> _logger;
@@ -227,7 +227,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             _logger = logger;
         }
 
-        public async Task<SharedLibreries.Contracts.UpdateItemResponse> HandleAsync(SharedLibreries.Contracts.UpdateItemRequest request)
+        public async Task<UpdateItemResponse> HandleAsync(SharedLibreries.Contracts.UpdateItemRequest request)
         {
             try
             {
@@ -236,7 +236,7 @@ namespace WorkerServices.WorkerToDo.Handlers
                 var item = await _itemRepository.GetByIdAsync(request.ItemId);
                 if (item == null)
                 {
-                    return new SharedLibreries.Contracts.UpdateItemResponse
+                    return new UpdateItemResponse
                     {
                         IsSuccess = false,
                         ErrorMessage = $"Item with ID {request.ItemId} not found."
@@ -250,7 +250,7 @@ namespace WorkerServices.WorkerToDo.Handlers
                 await _itemRepository.UpdateAsync(item);
 
                 _logger.LogInformation("Item updated successfully with ID {ItemId}", item.Id);
-                return new SharedLibreries.Contracts.UpdateItemResponse
+                return new UpdateItemResponse
                 {
                     IsSuccess = true,
                     Item = new ItemResponse
@@ -270,7 +270,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating item with ID {ItemId}", request.ItemId);
-                return new SharedLibreries.Contracts.UpdateItemResponse
+                return new UpdateItemResponse
                 {
                     IsSuccess = false,
                     ErrorMessage = ex.Message
@@ -279,7 +279,7 @@ namespace WorkerServices.WorkerToDo.Handlers
         }
     }
 
-    public class DeleteItemMessageHandler : IMessageHandler<SharedLibreries.Contracts.DeleteItemRequest, SharedLibreries.Contracts.DeleteItemResponse>
+    public class DeleteItemMessageHandler : IMessageHandler<DeleteItemRequest, DeleteItemResponse>
     {
         private readonly IItemRepository _itemRepository;
         private readonly ILogger<DeleteItemMessageHandler> _logger;
@@ -290,7 +290,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             _logger = logger;
         }
 
-        public async Task<SharedLibreries.Contracts.DeleteItemResponse> HandleAsync(SharedLibreries.Contracts.DeleteItemRequest request)
+        public async Task<DeleteItemResponse> HandleAsync(DeleteItemRequest request)
         {
             try
             {
@@ -299,7 +299,7 @@ namespace WorkerServices.WorkerToDo.Handlers
                 var item = await _itemRepository.GetByIdAsync(request.ItemId);
                 if (item == null)
                 {
-                    return new SharedLibreries.Contracts.DeleteItemResponse
+                    return new DeleteItemResponse
                     {
                         IsSuccess = false,
                         ErrorMessage = $"Item with ID {request.ItemId} not found."
@@ -309,7 +309,7 @@ namespace WorkerServices.WorkerToDo.Handlers
                 await _itemRepository.SoftDeleteAsync(request.ItemId);
 
                 _logger.LogInformation("Item soft deleted successfully with ID {ItemId}", request.ItemId);
-                return new SharedLibreries.Contracts.DeleteItemResponse
+                return new DeleteItemResponse
                 {
                     IsSuccess = true
                 };
@@ -317,7 +317,7 @@ namespace WorkerServices.WorkerToDo.Handlers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting item with ID {ItemId}", request.ItemId);
-                return new SharedLibreries.Contracts.DeleteItemResponse
+                return new DeleteItemResponse
                 {
                     IsSuccess = false,
                     ErrorMessage = ex.Message

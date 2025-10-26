@@ -74,11 +74,11 @@ namespace SharedLibreries.RabbitMQ
         private void RegisterMessageTypes()
         {
             // User operations only
-            _messageTypes[OperationTypes.CreateUser] = typeof(Contracts.CreateUserRequest);
-            _messageTypes[OperationTypes.GetUser] = typeof(Contracts.GetUserRequest);
-            _messageTypes[OperationTypes.GetAllUsers] = typeof(Contracts.GetAllUsersRequest);
-            _messageTypes[OperationTypes.UpdateUser] = typeof(Contracts.UpdateUserRequest);
-            _messageTypes[OperationTypes.DeleteUser] = typeof(Contracts.DeleteUserRequest);
+            _messageTypes[OperationTypes.CreateUser] = typeof(CreateUserRequest);
+            _messageTypes[OperationTypes.GetUser] = typeof(GetUserRequest);
+            _messageTypes[OperationTypes.GetAllUsers] = typeof(GetAllUsersRequest);
+            _messageTypes[OperationTypes.UpdateUser] = typeof(UpdateUserRequest);
+            _messageTypes[OperationTypes.DeleteUser] = typeof(DeleteUserRequest);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -165,25 +165,31 @@ namespace SharedLibreries.RabbitMQ
         {
             using var scope = _serviceProvider.CreateScope();
 
-            return operationType switch
+            var operationHandlers = new Dictionary<string, Func<Task<object>>>
             {
-                OperationTypes.CreateUser => await scope.ServiceProvider
+                [OperationTypes.CreateUser] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<CreateUserRequest, CreateUserResponse>>()
                     .HandleAsync((CreateUserRequest)request),
-                OperationTypes.GetUser => await scope.ServiceProvider
+                [OperationTypes.GetUser] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<GetUserRequest, GetUserResponse>>()
                     .HandleAsync((GetUserRequest)request),
-                OperationTypes.GetAllUsers => await scope.ServiceProvider
+                [OperationTypes.GetAllUsers] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<GetAllUsersRequest, GetAllUsersResponse>>()
                     .HandleAsync((GetAllUsersRequest)request),
-                OperationTypes.UpdateUser => await scope.ServiceProvider
+                [OperationTypes.UpdateUser] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<UpdateUserRequest, UpdateUserResponse>>()
                     .HandleAsync((UpdateUserRequest)request),
-                OperationTypes.DeleteUser => await scope.ServiceProvider
+                [OperationTypes.DeleteUser] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<DeleteUserRequest, DeleteUserResponse>>()
-                    .HandleAsync((DeleteUserRequest)request),
-                _ => throw new NotSupportedException($"Operation type {operationType} is not supported")
+                    .HandleAsync((DeleteUserRequest)request)
             };
+
+            if (operationHandlers.TryGetValue(operationType, out var handler))
+            {
+                return await handler();
+            }
+
+            throw new NotSupportedException($"Operation type {operationType} is not supported");
         }
 
         public override async Task StopAsync(CancellationToken cancellationToken)
@@ -192,7 +198,7 @@ namespace SharedLibreries.RabbitMQ
             await base.StopAsync(cancellationToken);
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

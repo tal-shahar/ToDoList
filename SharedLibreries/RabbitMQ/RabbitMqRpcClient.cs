@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Polly;
-using Polly.Extensions.Http;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using SharedLibreries.Contracts;
@@ -218,6 +216,8 @@ namespace SharedLibreries.RabbitMQ
 
             _disposed = true;
             _logger.LogInformation("RabbitMQ RPC Client disposed");
+            
+            GC.SuppressFinalize(this);
         }
     }
 

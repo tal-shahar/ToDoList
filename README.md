@@ -19,6 +19,7 @@ The application consists of:
 
 - [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/install/)
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (for local development)
+- For load testing: [k6](https://k6.io/) (optional)
 
 ### Running the Application
 
@@ -143,7 +144,57 @@ The application implements a clean separation of concerns between user and item 
 ### Web API Service
 - **URL**: http://localhost:8080
 - **Swagger UI**: http://localhost:8080/swagger
-- **Health Check**: http://localhost:8080/swagger (used for Docker health checks)
+- **Health Check**: http://localhost:8080/health
+- **Request Timeout**: 3 seconds
+- **Rate Limiting**: 10 requests/second, 100 requests/minute
+- **Connection Pool**: 100 RabbitMQ connections
+- **Compression**: GZIP enabled for all responses
+
+## 🧪 Load Testing
+
+The application includes comprehensive load testing capabilities to verify performance under high concurrent load.
+
+### Running Load Tests
+
+```bash
+# Quick test (1 minute)
+docker run --rm -v ${PWD}:/scripts --network host grafana/k6 run /scripts/load-test.js --duration 1m
+
+# Full load test (ramps to 1000 concurrent users)
+docker run --rm -v ${PWD}:/scripts --network host grafana/k6 run /scripts/load-test.js
+```
+
+### Performance Metrics
+
+- **Target Response Time**: p(95) < 2 seconds
+- **Maximum Concurrent Users**: 1000
+- **Rate Limiting**: 10 requests/second per IP
+- **Request Timeout**: 3 seconds
+- **Connection Pool**: 100 RabbitMQ connections
+
+See `load-test.js` for detailed test scenarios.
+
+## 🔐 Security
+
+### Security Features
+
+- **Rate Limiting**: Prevents API abuse and DoS attacks
+  - 10 requests per second
+  - 100 requests per minute
+- **Request Timeout**: Automatic timeout after 3 seconds
+- **Connection Pooling**: Prevents connection exhaustion
+- **Error Handling**: Graceful handling of invalid responses
+- **Health Monitoring**: Automatic connection health checks
+
+### Running Security Checks
+
+```bash
+# Check for common security issues
+powershell -ExecutionPolicy Bypass -File .\security-check.ps1
+
+# Run OWASP ZAP baseline scan
+docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost:8080
+```
 
 ## 🛠️ Development
 
@@ -161,6 +212,26 @@ dotnet test UnitTests/ToDoListAPI.Tests/
 dotnet test UnitTests/WorkerUser.Tests/
 dotnet test UnitTests/WorkerToDo.Tests/
 ```
+
+### Integration Tests
+
+Integration tests verify the complete application stack including API, RabbitMQ, and database:
+
+```bash
+# Basic integration test (health check + API connectivity)
+powershell -ExecutionPolicy Bypass -File .\integration-test-simple.ps1
+
+# Full integration test (creates, updates, deletes test data)
+powershell -ExecutionPolicy Bypass -File .\integration-test.ps1
+```
+
+**Note**: Integration tests verify:
+- API endpoints are accessible
+- RabbitMQ messaging works correctly
+- Database persistence is functioning
+- Request/response flow through the entire system
+
+**Status**: ✅ All 128 unit tests passing | ✅ Basic integration tests passing
 
 ### Project Structure
 
@@ -320,6 +391,15 @@ All services should show "Up" status with healthy indicators.
 - ✅ **Docker Support** for easy deployment
 - ✅ **Clean Architecture** following SOLID principles
 - ✅ **Advanced Error Handling** with retry policies and circuit breakers
+- ✅ **Performance Optimizations**:
+  - RabbitMQ connection pool (100 connections)
+  - HTTP response compression (GZIP)
+  - Request timeout protection (3 seconds)
+- ✅ **Security & Reliability**:
+  - Rate limiting (10 req/sec, 100 req/min)
+  - Circuit breaker protection
+  - Enhanced JSON error handling
+  - Connection health monitoring
 
 ## 🤝 Contributing
 

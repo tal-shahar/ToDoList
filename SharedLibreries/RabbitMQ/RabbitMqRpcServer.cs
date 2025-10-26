@@ -203,23 +203,28 @@ namespace SharedLibreries.RabbitMQ
         {
             using var scope = _serviceProvider.CreateScope();
             
-            return operationType switch
+            var operationHandlers = new Dictionary<string, Func<Task<IResponse>>>
             {
-                OperationTypes.CreateUser => await ProcessUserRequestAsync<Contracts.CreateUserRequest, Contracts.CreateUserResponse>(request, scope),
-                OperationTypes.GetUser => await ProcessUserRequestAsync<Contracts.GetUserRequest, Contracts.GetUserResponse>(request, scope),
-                OperationTypes.GetAllUsers => await ProcessUserRequestAsync<Contracts.GetAllUsersRequest, Contracts.GetAllUsersResponse>(request, scope),
-                OperationTypes.UpdateUser => await ProcessUserRequestAsync<Contracts.UpdateUserRequest, Contracts.UpdateUserResponse>(request, scope),
-                OperationTypes.DeleteUser => await ProcessUserRequestAsync<Contracts.DeleteUserRequest, Contracts.DeleteUserResponse>(request, scope),
+                [OperationTypes.CreateUser] = async () => await ProcessUserRequestAsync<Contracts.CreateUserRequest, Contracts.CreateUserResponse>(request, scope),
+                [OperationTypes.GetUser] = async () => await ProcessUserRequestAsync<Contracts.GetUserRequest, Contracts.GetUserResponse>(request, scope),
+                [OperationTypes.GetAllUsers] = async () => await ProcessUserRequestAsync<Contracts.GetAllUsersRequest, Contracts.GetAllUsersResponse>(request, scope),
+                [OperationTypes.UpdateUser] = async () => await ProcessUserRequestAsync<Contracts.UpdateUserRequest, Contracts.UpdateUserResponse>(request, scope),
+                [OperationTypes.DeleteUser] = async () => await ProcessUserRequestAsync<Contracts.DeleteUserRequest, Contracts.DeleteUserResponse>(request, scope),
                 
-                OperationTypes.CreateItem => await ProcessItemRequestAsync<Contracts.CreateItemRequest, Contracts.CreateItemResponse>(request, scope),
-                OperationTypes.GetItem => await ProcessItemRequestAsync<Contracts.GetItemRequest, Contracts.GetItemResponse>(request, scope),
-                OperationTypes.GetAllItems => await ProcessItemRequestAsync<Contracts.GetAllItemsRequest, Contracts.GetAllItemsResponse>(request, scope),
-                OperationTypes.GetUserItems => await ProcessItemRequestAsync<Contracts.GetUserItemsRequest, Contracts.GetUserItemsResponse>(request, scope),
-                OperationTypes.UpdateItem => await ProcessItemRequestAsync<Contracts.UpdateItemRequest, Contracts.UpdateItemResponse>(request, scope),
-                OperationTypes.DeleteItem => await ProcessItemRequestAsync<Contracts.DeleteItemRequest, Contracts.DeleteItemResponse>(request, scope),
-                
-                _ => throw new NotSupportedException($"Operation type {operationType} is not supported")
+                [OperationTypes.CreateItem] = async () => await ProcessItemRequestAsync<Contracts.CreateItemRequest, Contracts.CreateItemResponse>(request, scope),
+                [OperationTypes.GetItem] = async () => await ProcessItemRequestAsync<Contracts.GetItemRequest, Contracts.GetItemResponse>(request, scope),
+                [OperationTypes.GetAllItems] = async () => await ProcessItemRequestAsync<Contracts.GetAllItemsRequest, Contracts.GetAllItemsResponse>(request, scope),
+                [OperationTypes.GetUserItems] = async () => await ProcessItemRequestAsync<Contracts.GetUserItemsRequest, Contracts.GetUserItemsResponse>(request, scope),
+                [OperationTypes.UpdateItem] = async () => await ProcessItemRequestAsync<Contracts.UpdateItemRequest, Contracts.UpdateItemResponse>(request, scope),
+                [OperationTypes.DeleteItem] = async () => await ProcessItemRequestAsync<Contracts.DeleteItemRequest, Contracts.DeleteItemResponse>(request, scope)
             };
+
+            if (operationHandlers.TryGetValue(operationType, out var handler))
+            {
+                return await handler();
+            }
+
+            throw new NotSupportedException($"Operation type {operationType} is not supported");
         }
 
         private async Task<TResponse> ProcessUserRequestAsync<TRequest, TResponse>(IRequest request, IServiceScope scope)

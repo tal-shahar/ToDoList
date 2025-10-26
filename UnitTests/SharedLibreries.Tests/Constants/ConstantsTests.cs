@@ -46,7 +46,7 @@ namespace SharedLibreries.Tests.Constants
             Assert.Equal("/", RabbitMQConfig.VirtualHost);
             Assert.Equal("guest", RabbitMQConfig.Username);
             Assert.Equal("guest", RabbitMQConfig.Password);
-            Assert.Equal(30, RabbitMQConfig.RequestTimeoutSeconds);
+            Assert.Equal(10, RabbitMQConfig.RequestTimeoutSeconds);
         }
 
         [Fact]

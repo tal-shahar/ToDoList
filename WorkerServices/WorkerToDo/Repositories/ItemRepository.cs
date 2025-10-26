@@ -13,7 +13,7 @@ namespace WorkerServices.WorkerToDo.Repositories
             _context = context;
         }
 
-        public async Task<Item> GetByIdAsync(Guid id)
+        public async Task<Item?> GetByIdAsync(Guid id)
         {
             return await _context.Items.FindAsync(id);
         }

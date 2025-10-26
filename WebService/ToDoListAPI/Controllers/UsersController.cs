@@ -1,9 +1,5 @@
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using SharedLibreries.Constants;
-using SharedLibreries.Contracts;
 using SharedLibreries.DTOs;
-using SharedLibreries.RabbitMQ;
 using ToDoListAPI.Services;
 
 namespace ToDoListAPI.Controllers
@@ -22,7 +18,7 @@ namespace ToDoListAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<UserResponse>> CreateUser([FromBody] SharedLibreries.DTOs.CreateUserRequest request)
+        public async Task<ActionResult<UserResponse>> CreateUser([FromBody] CreateUserRequest request)
         {
             try
             {
@@ -39,6 +35,7 @@ namespace ToDoListAPI.Controllers
                     };
                     return CreatedAtAction(nameof(GetUser), new { id = userResponse.Id }, userResponse);
                 }
+
                 return BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
@@ -58,6 +55,7 @@ namespace ToDoListAPI.Controllers
                 {
                     return Ok(result.Users);
                 }
+
                 return BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
@@ -77,10 +75,12 @@ namespace ToDoListAPI.Controllers
                 {
                     return Ok(result.User);
                 }
+
                 if (result.ErrorMessage?.Contains("not found") == true)
                 {
                     return NotFound(result.ErrorMessage);
                 }
+
                 return BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
@@ -91,7 +91,7 @@ namespace ToDoListAPI.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<UserResponse>> UpdateUser(Guid id, [FromBody] SharedLibreries.DTOs.UpdateUserRequest request)
+        public async Task<ActionResult<UserResponse>> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
         {
             try
             {
@@ -100,10 +100,12 @@ namespace ToDoListAPI.Controllers
                 {
                     return Ok(result.User);
                 }
+
                 if (result.ErrorMessage?.Contains("not found") == true)
                 {
                     return NotFound(result.ErrorMessage);
                 }
+
                 return BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
@@ -123,10 +125,12 @@ namespace ToDoListAPI.Controllers
                 {
                     return NoContent();
                 }
+
                 if (result.ErrorMessage?.Contains("not found") == true)
                 {
                     return NotFound(result.ErrorMessage);
                 }
+
                 return BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)

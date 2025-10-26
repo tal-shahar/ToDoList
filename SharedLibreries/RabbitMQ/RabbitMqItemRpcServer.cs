@@ -166,28 +166,34 @@ namespace SharedLibreries.RabbitMQ
         {
             using var scope = _serviceProvider.CreateScope();
 
-            return operationType switch
+            var operationHandlers = new Dictionary<string, Func<Task<object>>>
             {
-                OperationTypes.CreateItem => await scope.ServiceProvider
+                [OperationTypes.CreateItem] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<CreateItemRequest, CreateItemResponse>>()
                     .HandleAsync((CreateItemRequest)request),
-                OperationTypes.GetItem => await scope.ServiceProvider
+                [OperationTypes.GetItem] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<GetItemRequest, GetItemResponse>>()
                     .HandleAsync((GetItemRequest)request),
-                OperationTypes.GetAllItems => await scope.ServiceProvider
+                [OperationTypes.GetAllItems] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<GetAllItemsRequest, GetAllItemsResponse>>()
                     .HandleAsync((GetAllItemsRequest)request),
-                OperationTypes.GetUserItems => await scope.ServiceProvider
+                [OperationTypes.GetUserItems] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<GetUserItemsRequest, GetUserItemsResponse>>()
                     .HandleAsync((GetUserItemsRequest)request),
-                OperationTypes.UpdateItem => await scope.ServiceProvider
+                [OperationTypes.UpdateItem] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<UpdateItemRequest, UpdateItemResponse>>()
                     .HandleAsync((UpdateItemRequest)request),
-                OperationTypes.DeleteItem => await scope.ServiceProvider
+                [OperationTypes.DeleteItem] = async () => await scope.ServiceProvider
                     .GetRequiredService<IMessageHandler<DeleteItemRequest, DeleteItemResponse>>()
-                    .HandleAsync((DeleteItemRequest)request),
-                _ => throw new NotSupportedException($"Operation type {operationType} is not supported")
+                    .HandleAsync((DeleteItemRequest)request)
             };
+
+            if (operationHandlers.TryGetValue(operationType, out var handler))
+            {
+                return await handler();
+            }
+
+            throw new NotSupportedException($"Operation type {operationType} is not supported");
         }
 
         public override async Task StopAsync(CancellationToken cancellationToken)
@@ -196,7 +202,7 @@ namespace SharedLibreries.RabbitMQ
             await base.StopAsync(cancellationToken);
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

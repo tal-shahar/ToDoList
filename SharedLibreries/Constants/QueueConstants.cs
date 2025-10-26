@@ -31,7 +31,7 @@ namespace SharedLibreries.Constants
         public const string VirtualHost = "/";
         public const string Username = "guest";
         public const string Password = "guest";
-        public const int RequestTimeoutSeconds = 30;
+        public const int RequestTimeoutSeconds = 10;
         public const int RetryCount = 3;
     }
 }

@@ -1,6 +1,5 @@
 using SharedLibreries.Constants;
 using SharedLibreries.Contracts;
-using SharedLibreries.DTOs;
 using SharedLibreries.RabbitMQ;
 
 namespace ToDoListAPI.Services
@@ -29,13 +28,13 @@ namespace ToDoListAPI.Services
         {
             try
             {
-                var rpcRequest = new SharedLibreries.Contracts.CreateUserRequest
+                var rpcRequest = new CreateUserRequest
                 {
                     Name = request.Name,
                     Email = request.Email
                 };
 
-                return await _rabbitMqService.SendRpcRequestAsync<SharedLibreries.Contracts.CreateUserRequest, CreateUserResponse>(
+                return await _rabbitMqService.SendRpcRequestAsync<CreateUserRequest, CreateUserResponse>(
                     rpcRequest, 
                     QueueNames.UserQueue, 
                     OperationTypes.CreateUser);
@@ -55,12 +54,12 @@ namespace ToDoListAPI.Services
         {
             try
             {
-                var rpcRequest = new SharedLibreries.Contracts.GetUserRequest
+                var rpcRequest = new GetUserRequest
                 {
                     UserId = userId
                 };
 
-                return await _rabbitMqService.SendRpcRequestAsync<SharedLibreries.Contracts.GetUserRequest, GetUserResponse>(
+                return await _rabbitMqService.SendRpcRequestAsync<GetUserRequest, GetUserResponse>(
                     rpcRequest, 
                     QueueNames.UserQueue, 
                     OperationTypes.GetUser);
@@ -80,9 +79,9 @@ namespace ToDoListAPI.Services
         {
             try
             {
-                var rpcRequest = new SharedLibreries.Contracts.GetAllUsersRequest();
+                var rpcRequest = new GetAllUsersRequest();
 
-                return await _rabbitMqService.SendRpcRequestAsync<SharedLibreries.Contracts.GetAllUsersRequest, GetAllUsersResponse>(
+                return await _rabbitMqService.SendRpcRequestAsync<GetAllUsersRequest, GetAllUsersResponse>(
                     rpcRequest, 
                     QueueNames.UserQueue, 
                     OperationTypes.GetAllUsers);
@@ -102,14 +101,14 @@ namespace ToDoListAPI.Services
         {
             try
             {
-                var rpcRequest = new SharedLibreries.Contracts.UpdateUserRequest
+                var rpcRequest = new UpdateUserRequest
                 {
                     UserId = userId,
                     Name = request.Name,
                     Email = request.Email
                 };
 
-                return await _rabbitMqService.SendRpcRequestAsync<SharedLibreries.Contracts.UpdateUserRequest, UpdateUserResponse>(
+                return await _rabbitMqService.SendRpcRequestAsync<UpdateUserRequest, UpdateUserResponse>(
                     rpcRequest, 
                     QueueNames.UserQueue, 
                     OperationTypes.UpdateUser);
@@ -129,12 +128,12 @@ namespace ToDoListAPI.Services
         {
             try
             {
-                var rpcRequest = new SharedLibreries.Contracts.DeleteUserRequest
+                var rpcRequest = new DeleteUserRequest
                 {
                     UserId = userId
                 };
 
-                return await _rabbitMqService.SendRpcRequestAsync<SharedLibreries.Contracts.DeleteUserRequest, DeleteUserResponse>(
+                return await _rabbitMqService.SendRpcRequestAsync<DeleteUserRequest, DeleteUserResponse>(
                     rpcRequest, 
                     QueueNames.UserQueue, 
                     OperationTypes.DeleteUser);

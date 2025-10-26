@@ -1,11 +1,19 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using SharedLibreries.Infrastructure.Database;
+using SharedLibreries.Infrastructure.Resilience;
 using SharedLibreries.Models;
 
 namespace WorkerServices.WorkerUser.Data
 {
-    public class ToDoDbContext : DbContext
+    public class ToDoDbContext : BaseDbContext
     {
-        public ToDoDbContext(DbContextOptions<ToDoDbContext> options) : base(options) { }
+        public ToDoDbContext(
+            DbContextOptions<ToDoDbContext> options,
+            ILogger<ToDoDbContext>? logger = null,
+            ICircuitBreaker? circuitBreaker = null,
+            IRetryPolicy? retryPolicy = null) 
+            : base(options, logger, circuitBreaker, retryPolicy) { }
 
         public DbSet<User> Users { get; set; }
 
@@ -21,38 +29,17 @@ namespace WorkerServices.WorkerUser.Data
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("NOW()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("NOW()");
-
             });
         }
 
-        public override int SaveChanges()
+        protected override void UpdateTimestamps()
         {
-            UpdateTimestamps();
-            return base.SaveChanges();
-        }
-
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            UpdateTimestamps();
-            return await base.SaveChangesAsync(cancellationToken);
-        }
-
-        private void UpdateTimestamps()
-        {
-            var entries = ChangeTracker.Entries()
-                .Where(e => e.Entity is User);
-
-            foreach (var entry in entries)
-            {
-                if (entry.Entity is User user)
-                {
-                    user.UpdatedAt = DateTime.UtcNow;
-                    if (entry.State == EntityState.Added)
-                    {
-                        user.CreatedAt = DateTime.UtcNow;
-                    }
-                }
-            }
+            UpdateTimestampsForEntity<User>(
+                u => u.UpdatedAt,
+                (u, time) => u.UpdatedAt = time,
+                u => u.CreatedAt,
+                (u, time) => u.CreatedAt = time
+            );
         }
     }
 }

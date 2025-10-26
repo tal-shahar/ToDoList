@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using SharedLibreries.Contracts;
+using SharedLibreries.Infrastructure.Database;
+using SharedLibreries.Infrastructure.RabbitMQ;
 using SharedLibreries.RabbitMQ;
 using WorkerServices.WorkerUser.Data;
 using WorkerServices.WorkerUser.Handlers;
@@ -22,9 +24,8 @@ try
         .UseSerilog()
         .ConfigureServices((context, services) =>
         {
-            // Add DbContext
-            services.AddDbContext<ToDoDbContext>(options =>
-                options.UseNpgsql(context.Configuration["ConnectionStrings:PostgreSQL"]));
+            // Add resilient database with connection pooling and retry policies
+            services.AddResilientDatabase<ToDoDbContext>(context.Configuration, "PostgreSQL");
 
             // Add repositories
             services.AddScoped<IUserRepository, UserRepository>();
@@ -36,15 +37,26 @@ try
             services.AddScoped<IMessageHandler<UpdateUserRequest, UpdateUserResponse>, UpdateUserMessageHandler>();
             services.AddScoped<IMessageHandler<DeleteUserRequest, DeleteUserResponse>, DeleteUserMessageHandler>();
 
-            // Add RabbitMQ User RPC Server
-            services.AddRabbitMqUserRpcServer();
+            // Add resilient RabbitMQ RPC Server with circuit breaker and retry policies for user operations only
+            services.AddUserRabbitMqRpcServer();
         })
         .Build();
 
-    // Apply database migrations on startup
+    // Apply database migrations on startup with resilience
     using (var scope = host.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<ToDoDbContext>();
+        var healthChecker = scope.ServiceProvider.GetRequiredService<IDatabaseHealthChecker>();
+        
+        Log.Information("Checking database health...");
+        var isHealthy = await healthChecker.IsHealthyAsync();
+        
+        if (!isHealthy)
+        {
+            Log.Warning("Database is not healthy, attempting to ensure database exists...");
+            await healthChecker.EnsureDatabaseExistsAsync();
+        }
+        
         Log.Information("Applying database migrations...");
         await dbContext.Database.MigrateAsync();
         Log.Information("Database migrations applied successfully");

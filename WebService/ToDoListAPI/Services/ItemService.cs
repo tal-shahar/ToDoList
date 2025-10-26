@@ -1,17 +1,18 @@
 using SharedLibreries.Constants;
 using SharedLibreries.Contracts;
-using SharedLibreries.DTOs;
 using SharedLibreries.RabbitMQ;
+using CreateItemRequest = SharedLibreries.DTOs.CreateItemRequest;
+using UpdateItemRequest = SharedLibreries.DTOs.UpdateItemRequest;
 
 namespace ToDoListAPI.Services
 {
     public interface IItemService
     {
-        Task<CreateItemResponse> CreateItemAsync(SharedLibreries.DTOs.CreateItemRequest request);
+        Task<CreateItemResponse> CreateItemAsync(CreateItemRequest request);
         Task<GetItemResponse> GetItemAsync(Guid itemId);
         Task<GetAllItemsResponse> GetAllItemsAsync();
         Task<GetUserItemsResponse> GetUserItemsAsync(Guid userId);
-        Task<UpdateItemResponse> UpdateItemAsync(Guid itemId, SharedLibreries.DTOs.UpdateItemRequest request);
+        Task<UpdateItemResponse> UpdateItemAsync(Guid itemId, UpdateItemRequest request);
         Task<DeleteItemResponse> DeleteItemAsync(Guid itemId);
     }
 
@@ -26,7 +27,7 @@ namespace ToDoListAPI.Services
             _logger = logger;
         }
 
-        public async Task<CreateItemResponse> CreateItemAsync(SharedLibreries.DTOs.CreateItemRequest request)
+        public async Task<CreateItemResponse> CreateItemAsync(CreateItemRequest request)
         {
             try
             {
@@ -57,12 +58,12 @@ namespace ToDoListAPI.Services
         {
             try
             {
-                var rpcRequest = new SharedLibreries.Contracts.GetItemRequest
+                var rpcRequest = new GetItemRequest
                 {
                     ItemId = itemId
                 };
 
-                return await _rabbitMqService.SendRpcRequestAsync<SharedLibreries.Contracts.GetItemRequest, GetItemResponse>(
+                return await _rabbitMqService.SendRpcRequestAsync<GetItemRequest, GetItemResponse>(
                     rpcRequest, 
                     QueueNames.ItemQueue, 
                     OperationTypes.GetItem);
@@ -82,9 +83,9 @@ namespace ToDoListAPI.Services
         {
             try
             {
-                var rpcRequest = new SharedLibreries.Contracts.GetAllItemsRequest();
+                var rpcRequest = new GetAllItemsRequest();
 
-                return await _rabbitMqService.SendRpcRequestAsync<SharedLibreries.Contracts.GetAllItemsRequest, GetAllItemsResponse>(
+                return await _rabbitMqService.SendRpcRequestAsync<GetAllItemsRequest, GetAllItemsResponse>(
                     rpcRequest, 
                     QueueNames.ItemQueue, 
                     OperationTypes.GetAllItems);
@@ -104,12 +105,12 @@ namespace ToDoListAPI.Services
         {
             try
             {
-                var rpcRequest = new SharedLibreries.Contracts.GetUserItemsRequest
+                var rpcRequest = new GetUserItemsRequest
                 {
                     UserId = userId
                 };
 
-                return await _rabbitMqService.SendRpcRequestAsync<SharedLibreries.Contracts.GetUserItemsRequest, GetUserItemsResponse>(
+                return await _rabbitMqService.SendRpcRequestAsync<GetUserItemsRequest, GetUserItemsResponse>(
                     rpcRequest, 
                     QueueNames.ItemQueue, 
                     OperationTypes.GetUserItems);
@@ -125,7 +126,7 @@ namespace ToDoListAPI.Services
             }
         }
 
-        public async Task<UpdateItemResponse> UpdateItemAsync(Guid itemId, SharedLibreries.DTOs.UpdateItemRequest request)
+        public async Task<UpdateItemResponse> UpdateItemAsync(Guid itemId, UpdateItemRequest request)
         {
             try
             {
@@ -157,12 +158,12 @@ namespace ToDoListAPI.Services
         {
             try
             {
-                var rpcRequest = new SharedLibreries.Contracts.DeleteItemRequest
+                var rpcRequest = new DeleteItemRequest
                 {
                     ItemId = itemId
                 };
 
-                return await _rabbitMqService.SendRpcRequestAsync<SharedLibreries.Contracts.DeleteItemRequest, DeleteItemResponse>(
+                return await _rabbitMqService.SendRpcRequestAsync<DeleteItemRequest, DeleteItemResponse>(
                     rpcRequest, 
                     QueueNames.ItemQueue, 
                     OperationTypes.DeleteItem);

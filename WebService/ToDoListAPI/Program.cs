@@ -1,9 +1,10 @@
+using AspNetCoreRateLimit;
+using FluentValidation;
 using FluentValidation.AspNetCore;
 using Serilog;
-using SharedLibreries.RabbitMQ;
+using SharedLibreries.Infrastructure.RabbitMQ;
 using ToDoListAPI.Services;
 using ToDoListAPI.Validators;
-using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +18,26 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
+
+// Add response compression
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
+
+// Add rate limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+builder.Services.AddInMemoryRateLimiting();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -31,8 +51,8 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateUserRequestValidator>();
 
-// Add RabbitMQ service
-builder.Services.AddRabbitMqService(builder.Configuration);
+// Add resilient RabbitMQ service with connection pooling
+builder.Services.AddResilientRabbitMqService(maxPoolSize: 100);
 
 // Add application services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -44,7 +64,33 @@ builder.Services.AddHealthChecks();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-// Enable Swagger in all environments for easy testing
+
+// Set global request timeout to 3 seconds
+app.Use(async (context, next) =>
+{
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+    context.RequestAborted = cts.Token;
+    
+    try
+    {
+        await next(context);
+    }
+    catch (OperationCanceledException)
+    {
+        if (context.Response.HasStarted == false)
+        {
+            context.Response.StatusCode = 408;
+            await context.Response.WriteAsync("Request Timeout");
+        }
+    }
+});
+
+// Enable response compression
+app.UseResponseCompression();
+
+// Enable rate limiting
+app.UseIpRateLimiting();
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

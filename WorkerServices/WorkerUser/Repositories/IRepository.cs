@@ -6,7 +6,7 @@ namespace WorkerServices.WorkerUser.Repositories
 {
     public interface IRepository<T> where T : class
     {
-        Task<T> GetByIdAsync(Guid id);
+        Task<T?> GetByIdAsync(Guid id);
         Task<IEnumerable<T>> GetAllAsync();
         Task AddAsync(T entity);
         Task UpdateAsync(T entity);
@@ -15,7 +15,7 @@ namespace WorkerServices.WorkerUser.Repositories
 
     public interface IUserRepository : IRepository<User>
     {
-        Task<User> GetByEmailAsync(string email);
+        Task<User?> GetByEmailAsync(string email);
     }
 
 }

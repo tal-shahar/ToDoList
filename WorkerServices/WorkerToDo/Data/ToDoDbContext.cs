@@ -1,11 +1,19 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using SharedLibreries.Infrastructure.Database;
+using SharedLibreries.Infrastructure.Resilience;
 using SharedLibreries.Models;
 
 namespace WorkerServices.WorkerToDo.Data
 {
-    public class ToDoDbContext : DbContext
+    public class ToDoDbContext : BaseDbContext
     {
-        public ToDoDbContext(DbContextOptions<ToDoDbContext> options) : base(options) { }
+        public ToDoDbContext(
+            DbContextOptions<ToDoDbContext> options,
+            ILogger<ToDoDbContext>? logger = null,
+            ICircuitBreaker? circuitBreaker = null,
+            IRetryPolicy? retryPolicy = null) 
+            : base(options, logger, circuitBreaker, retryPolicy) { }
 
         public DbSet<Item> Items { get; set; }
 
@@ -28,34 +36,14 @@ namespace WorkerServices.WorkerToDo.Data
             });
         }
 
-        public override int SaveChanges()
+        protected override void UpdateTimestamps()
         {
-            UpdateTimestamps();
-            return base.SaveChanges();
-        }
-
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            UpdateTimestamps();
-            return await base.SaveChangesAsync(cancellationToken);
-        }
-
-        private void UpdateTimestamps()
-        {
-            var entries = ChangeTracker.Entries()
-                .Where(e => e.Entity is Item);
-
-            foreach (var entry in entries)
-            {
-                if (entry.Entity is Item item)
-                {
-                    item.UpdatedAt = DateTime.UtcNow;
-                    if (entry.State == EntityState.Added)
-                    {
-                        item.CreatedAt = DateTime.UtcNow;
-                    }
-                }
-            }
+            UpdateTimestampsForEntity<Item>(
+                i => i.UpdatedAt,
+                (i, time) => i.UpdatedAt = time,
+                i => i.CreatedAt,
+                (i, time) => i.CreatedAt = time
+            );
         }
     }
 }
