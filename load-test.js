@@ -32,10 +32,24 @@ export default function () {
 
   check(createUserRes, {
     'create user status is 201': (r) => r.status === 201,
-    'create user response has ID': (r) => JSON.parse(r.body).id !== undefined,
+    'create user response has ID': (r) => {
+      try {
+        return r.status === 201 && r.body && JSON.parse(r.body).id !== undefined;
+      } catch (e) {
+        return false;
+      }
+    },
   });
 
-  let userId = createUserRes.status === 201 ? JSON.parse(createUserRes.body).id : null;
+  let userId = null;
+  if (createUserRes.status === 201 && createUserRes.body) {
+    try {
+      const parsed = JSON.parse(createUserRes.body);
+      userId = parsed.id;
+    } catch (e) {
+      // Response is not valid JSON, skip
+    }
+  }
 
   if (userId) {
     // Get user by ID
@@ -57,14 +71,21 @@ export default function () {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    if (createItemRes.status === 201) {
-      let itemId = JSON.parse(createItemRes.body).id;
+    if (createItemRes.status === 201 && createItemRes.body) {
+      try {
+        const parsed = JSON.parse(createItemRes.body);
+        let itemId = parsed.id;
 
-      // Get item by ID
-      http.get(`${BASE_URL}/items/${itemId}`);
+        if (itemId) {
+          // Get item by ID
+          http.get(`${BASE_URL}/items/${itemId}`);
 
-      // Get user's items
-      http.get(`${BASE_URL}/items/user/${userId}`);
+          // Get user's items
+          http.get(`${BASE_URL}/items/user/${userId}`);
+        }
+      } catch (e) {
+        // Response is not valid JSON, skip
+      }
     }
   }
 

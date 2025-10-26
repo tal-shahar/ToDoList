@@ -24,6 +24,7 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
         private readonly ConcurrentDictionary<string, TaskCompletionSource<IResponse>> _pendingRequests = new();
         private readonly Timer _cleanupTimer;
         private readonly CancellationTokenSource _cancellationTokenSource = new();
+        private readonly SemaphoreSlim _channelSemaphore = new(1, 1);
         private IModel? _channel;
         private bool _disposed = false;
 
@@ -114,16 +115,24 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
 
         private async Task<IModel> EnsureChannelAsync()
         {
-            if (_channel != null && _channel.IsOpen)
-                return _channel;
+            await _channelSemaphore.WaitAsync();
+            try
+            {
+                if (_channel != null && _channel.IsOpen)
+                    return _channel;
 
-            _channel?.Close();
-            _channel?.Dispose();
-            _channel = await _connectionManager.GetChannelAsync();
-            
-            _logger.LogDebug("Created new RabbitMQ channel");
-            
-            return _channel;
+                _channel?.Close();
+                _channel?.Dispose();
+                _channel = await _connectionManager.GetChannelAsync();
+                
+                _logger.LogDebug("Created new RabbitMQ channel");
+                
+                return _channel;
+            }
+            finally
+            {
+                _channelSemaphore.Release();
+            }
         }
 
         private async Task SetupDeadLetterExchangeAsync()
@@ -184,16 +193,16 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
                     };
                 }
 
-                // Declare temporary reply queue
+                // Setup consumer FIRST before publishing to avoid race condition
+                var tcs = new TaskCompletionSource<IResponse>();
+                _pendingRequests[correlationId] = tcs;
+
+                // Declare temporary reply queue with autoDelete=false to keep it alive
                 var queueArgs = new Dictionary<string, object>
                 {
                     { "x-message-ttl", 300000 } // 5 minutes TTL
                 };
-                var replyQueue = _channel.QueueDeclare(replyQueueName, false, true, true, queueArgs);
-
-                // Setup consumer for reply
-                var tcs = new TaskCompletionSource<IResponse>();
-                _pendingRequests[correlationId] = tcs;
+                var replyQueue = _channel.QueueDeclare(replyQueueName, false, false, false, queueArgs);
 
                 var consumer = new EventingBasicConsumer(_channel);
                 consumer.Received += (model, ea) =>
@@ -254,6 +263,7 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
                     }
                 };
 
+                // Register consumer BEFORE publishing
                 var consumerTag = _channel.BasicConsume(replyQueueName, true, consumer);
 
                 // Declare main queue with DLX and TTL
@@ -263,7 +273,7 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
                     { "x-message-ttl", 300000 } // 5 minutes TTL
                 });
 
-                // Publish request
+                // Publish request AFTER consumer is registered
                 var requestJson = JsonSerializer.Serialize(request, _jsonOptions);
                 var requestBody = Encoding.UTF8.GetBytes(requestJson);
 
@@ -359,6 +369,7 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
             }
             
             _cancellationTokenSource?.Dispose();
+            _channelSemaphore?.Dispose();
 
             _disposed = true;
             _logger.LogInformation("Resilient RabbitMQ Service disposed");

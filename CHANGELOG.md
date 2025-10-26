@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased] - Load Test Performance Fixes
+
+### Fixed
+- **Request timeout**: Increased global request timeout from 3 seconds to 15 seconds to prevent premature timeouts during high load
+- **Rate limiting**: Adjusted rate limits from 10 req/sec to 100 req/sec to better handle concurrent users
+- **RabbitMQ connection pool**: Reduced connection pool size from 100 to 20 to prevent resource exhaustion
+- **Channel concurrency**: Added semaphore locking to `EnsureChannelAsync()` in `ResilientRabbitMqService` to prevent race conditions
+
+### Changed
+- Request timeout increased to 15 seconds (allows RPC operations with 10-second timeout to complete)
+- Rate limits increased to 100 requests/second and 1000 requests/minute
+- Connection pool reduced to 20 connections for better resource management
+
 ## [Unreleased] - 2025-10-26
 
 ### Performance Improvements

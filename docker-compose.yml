@@ -70,7 +70,6 @@ services:
     build:
       context: .
       dockerfile: WorkerServices/WorkerUser/Dockerfile
-    container_name: todo-worker-user
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=todoapp;Username=postgres;Password=postgres
@@ -90,7 +89,6 @@ services:
     build:
       context: .
       dockerfile: WorkerServices/WorkerToDo/Dockerfile
-    container_name: todo-worker-todo
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=todoapp;Username=postgres;Password=postgres

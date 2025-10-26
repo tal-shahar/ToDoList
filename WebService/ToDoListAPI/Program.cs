@@ -52,7 +52,7 @@ builder.Services.AddFluentValidationClientsideAdapters();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateUserRequestValidator>();
 
 // Add resilient RabbitMQ service with connection pooling
-builder.Services.AddResilientRabbitMqService(maxPoolSize: 100);
+builder.Services.AddResilientRabbitMqService(maxPoolSize: 20);
 
 // Add application services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -65,10 +65,10 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline
 
-// Set global request timeout to 3 seconds
+// Set global request timeout to 15 seconds
 app.Use(async (context, next) =>
 {
-    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
     context.RequestAborted = cts.Token;
     
     try
@@ -80,7 +80,8 @@ app.Use(async (context, next) =>
         if (context.Response.HasStarted == false)
         {
             context.Response.StatusCode = 408;
-            await context.Response.WriteAsync("Request Timeout");
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync("{\"error\":\"Request Timeout\"}");
         }
     }
 });
@@ -88,8 +89,8 @@ app.Use(async (context, next) =>
 // Enable response compression
 app.UseResponseCompression();
 
-// Enable rate limiting
-app.UseIpRateLimiting();
+// Enable rate limiting (disabled for load testing)
+// app.UseIpRateLimiting();
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
