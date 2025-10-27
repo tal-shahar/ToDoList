@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using SharedLibreries.Models;
-using WorkerServices.WorkerUser.Data;
-using WorkerServices.WorkerUser.Repositories;
+using WorkerUser.Data;
+using WorkerUser.Repositories;
 
 namespace WorkerUser.Tests.Repositories
 {

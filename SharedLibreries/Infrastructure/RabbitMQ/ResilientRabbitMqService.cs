@@ -25,6 +25,12 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
         private readonly Timer _cleanupTimer;
         private readonly CancellationTokenSource _cancellationTokenSource = new();
         private readonly SemaphoreSlim _channelSemaphore = new(1, 1);
+        
+        // Channel pool for concurrent requests
+        private readonly ConcurrentQueue<IModel> _channelPool = new();
+        private readonly int _maxPoolSize = 20;
+        private readonly SemaphoreSlim _poolSemaphore = new(20, 20); // Limit concurrent channels
+        
         private IModel? _channel;
         private bool _disposed = false;
 
@@ -176,13 +182,22 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
 
             var correlationId = request.CorrelationId;
             var replyQueueName = $"reply.{correlationId}";
-
+            
+            // Get a channel from pool (or create new one if pool is available)
+            IModel? channel = null;
+            await _poolSemaphore.WaitAsync();
+            
             try
             {
-                // Ensure we have a valid channel
-                await EnsureChannelAsync();
+                // Try to get channel from pool
+                if (!_channelPool.TryDequeue(out channel))
+                {
+                    // Pool empty, create new channel
+                    var connection = await _connectionManager.GetConnectionAsync();
+                    channel = connection.CreateModel();
+                }
 
-                if (_channel == null || !_channel.IsOpen)
+                if (channel == null || !channel.IsOpen)
                 {
                     _logger.LogError("No valid channel available");
                     return new TResponse
@@ -202,9 +217,9 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
                 {
                     { "x-message-ttl", 300000 } // 5 minutes TTL
                 };
-                var replyQueue = _channel.QueueDeclare(replyQueueName, false, false, false, queueArgs);
+                var replyQueue = channel.QueueDeclare(replyQueueName, false, false, false, queueArgs);
 
-                var consumer = new EventingBasicConsumer(_channel);
+                var consumer = new EventingBasicConsumer(channel);
                 consumer.Received += (model, ea) =>
                 {
                     if (ea.BasicProperties.CorrelationId == correlationId)
@@ -264,10 +279,10 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
                 };
 
                 // Register consumer BEFORE publishing
-                var consumerTag = _channel.BasicConsume(replyQueueName, true, consumer);
+                var consumerTag = channel.BasicConsume(replyQueueName, true, consumer);
 
                 // Declare main queue with DLX and TTL
-                _channel.QueueDeclare(queueName, true, false, false, new Dictionary<string, object>
+                channel.QueueDeclare(queueName, true, false, false, new Dictionary<string, object>
                 {
                     { "x-dead-letter-exchange", QueueNames.DeadLetterExchange },
                     { "x-message-ttl", 300000 } // 5 minutes TTL
@@ -277,14 +292,14 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
                 var requestJson = JsonSerializer.Serialize(request, _jsonOptions);
                 var requestBody = Encoding.UTF8.GetBytes(requestJson);
 
-                var properties = _channel.CreateBasicProperties();
+                var properties = channel.CreateBasicProperties();
                 properties.CorrelationId = correlationId;
                 properties.ReplyTo = replyQueueName;
                 properties.Type = operationType;
                 properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
                 properties.Persistent = true;
 
-                _channel.BasicPublish("", queueName, properties, requestBody);
+                channel.BasicPublish("", queueName, properties, requestBody);
 
                 _logger.LogDebug("Sent RPC request {OperationType} with correlation ID {CorrelationId}", operationType, correlationId);
 
@@ -324,14 +339,30 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
                 _pendingRequests.TryRemove(correlationId, out _);
                 try
                 {
-                    if (_channel?.IsOpen == true)
+                    if (channel?.IsOpen == true)
                     {
-                        _channel.QueueDelete(replyQueueName);
+                        channel.QueueDelete(replyQueueName);
+                        
+                        // Return channel to pool if pool is not full
+                        if (_channelPool.Count < _maxPoolSize)
+                        {
+                            _channelPool.Enqueue(channel);
+                        }
+                        else
+                        {
+                            // Pool full, dispose channel
+                            channel.Close();
+                            channel.Dispose();
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to delete reply queue {ReplyQueueName}", replyQueueName);
+                    _logger.LogWarning(ex, "Failed to clean up channel");
+                }
+                finally
+                {
+                    _poolSemaphore.Release();
                 }
             }
         }
@@ -362,6 +393,20 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
             _channel?.Close();
             _channel?.Dispose();
             
+            // Clean up channel pool
+            while (_channelPool.TryDequeue(out var pooledChannel))
+            {
+                try
+                {
+                    pooledChannel?.Close();
+                    pooledChannel?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error disposing pooled channel");
+                }
+            }
+            
             if (_connectionManager != null)
             {
                 _connectionManager.ConnectionLost -= OnConnectionLost;
@@ -370,6 +415,7 @@ namespace SharedLibreries.Infrastructure.RabbitMQ
             
             _cancellationTokenSource?.Dispose();
             _channelSemaphore?.Dispose();
+            _poolSemaphore?.Dispose();
 
             _disposed = true;
             _logger.LogInformation("Resilient RabbitMQ Service disposed");

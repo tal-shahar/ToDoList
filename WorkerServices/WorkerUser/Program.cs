@@ -1,14 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Serilog;
 using SharedLibreries.Contracts;
 using SharedLibreries.Infrastructure.Database;
 using SharedLibreries.Infrastructure.RabbitMQ;
 using SharedLibreries.RabbitMQ;
-using WorkerServices.WorkerUser.Data;
 using WorkerServices.WorkerUser.Handlers;
-using WorkerServices.WorkerUser.Repositories;
+using WorkerUser.Data;
+using WorkerUser.Repositories;
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()

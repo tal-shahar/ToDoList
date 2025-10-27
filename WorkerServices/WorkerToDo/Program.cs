@@ -6,9 +6,9 @@ using SharedLibreries.Contracts;
 using SharedLibreries.Infrastructure.Database;
 using SharedLibreries.Infrastructure.RabbitMQ;
 using SharedLibreries.RabbitMQ;
-using WorkerServices.WorkerToDo.Data;
-using WorkerServices.WorkerToDo.Handlers;
 using WorkerServices.WorkerToDo.Repositories;
+using WorkerToDo.Data;
+using WorkerToDo.Handlers;
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()

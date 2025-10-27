@@ -3,8 +3,8 @@ using Moq;
 using SharedLibreries.Contracts;
 using SharedLibreries.DTOs;
 using SharedLibreries.Models;
-using WorkerServices.WorkerToDo.Handlers;
 using WorkerServices.WorkerToDo.Repositories;
+using WorkerToDo.Handlers;
 
 namespace WorkerToDo.Tests.Handlers
 {

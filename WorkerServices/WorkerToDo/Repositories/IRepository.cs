@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
 using SharedLibreries.Models;
-using WorkerServices.WorkerToDo.Data;
 
 namespace WorkerServices.WorkerToDo.Repositories
 {

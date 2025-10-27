@@ -4,7 +4,7 @@ using SharedLibreries.Contracts;
 using SharedLibreries.DTOs;
 using SharedLibreries.Models;
 using WorkerServices.WorkerUser.Handlers;
-using WorkerServices.WorkerUser.Repositories;
+using WorkerUser.Repositories;
 
 namespace WorkerUser.Tests.Handlers
 {

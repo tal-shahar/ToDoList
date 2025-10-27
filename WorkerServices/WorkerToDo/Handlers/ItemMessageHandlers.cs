@@ -5,7 +5,7 @@ using SharedLibreries.Models;
 using SharedLibreries.RabbitMQ;
 using WorkerServices.WorkerToDo.Repositories;
 
-namespace WorkerServices.WorkerToDo.Handlers
+namespace WorkerToDo.Handlers
 {
     public class CreateItemMessageHandler : IMessageHandler<SharedLibreries.Contracts.CreateItemRequest, CreateItemResponse>
     {

@@ -4,7 +4,7 @@ using SharedLibreries.Infrastructure.Database;
 using SharedLibreries.Infrastructure.Resilience;
 using SharedLibreries.Models;
 
-namespace WorkerServices.WorkerToDo.Data
+namespace WorkerToDo.Data
 {
     public class ToDoDbContext : BaseDbContext
     {

@@ -1,10 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using SharedLibreries.Infrastructure.Database;
 using SharedLibreries.Infrastructure.Resilience;
 using SharedLibreries.Models;
 
-namespace WorkerServices.WorkerUser.Data
+namespace WorkerUser.Data
 {
     public class ToDoDbContext : BaseDbContext
     {

@@ -1,8 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using SharedLibreries.Models;
-using WorkerServices.WorkerUser.Data;
 
-namespace WorkerServices.WorkerUser.Repositories
+namespace WorkerUser.Repositories
 {
     public interface IRepository<T> where T : class
     {
@@ -17,5 +15,6 @@ namespace WorkerServices.WorkerUser.Repositories
     {
         Task<User?> GetByEmailAsync(string email);
     }
-
 }
+
+

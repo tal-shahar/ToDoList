@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using SharedLibreries.Models;
-using WorkerServices.WorkerUser.Data;
+using WorkerUser.Data;
 
-namespace WorkerServices.WorkerUser.Repositories
+namespace WorkerUser.Repositories
 {
     public class UserRepository : IUserRepository
     {
