@@ -24,6 +24,9 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 
+// Add CORS
+builder.Services.AddCors();
+
 // Add response compression
 builder.Services.AddResponseCompression(options =>
 {
@@ -89,8 +92,32 @@ app.Use(async (context, next) =>
 // Enable response compression
 app.UseResponseCompression();
 
-// Enable rate limiting (disabled for load testing)
-// app.UseIpRateLimiting();
+// Add security headers
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    await next();
+});
+
+// Add CORS policy
+app.UseCors(policy =>
+{
+    policy
+        .WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
+                    ?? new[] { "http://localhost:3000", "http://localhost:8080" })
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+});
+
+// Enable rate limiting (disabled for load testing - uncomment for production)
+if (builder.Environment.IsProduction())
+{
+    app.UseIpRateLimiting();
+}
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>

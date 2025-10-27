@@ -140,22 +140,25 @@ The application implements a clean separation of concerns between user and item 
 
 ### RabbitMQ Management
 - **Management UI**: http://localhost:15672
-- **Username**: guest
-- **Password**: guest
+- **Username**: `rabbitmq` (configurable via environment variables)
+- **Password**: Set via environment variable (default: `SecurePass123!`)
 - **AMQP Port**: 5672
 - **Queues**: 
   - `user.operations` - User-related message queue
   - `item.operations` - Item-related message queue
+
+**Note**: Credentials are configurable via environment variables. See [SECURITY.md](SECURITY.md) for details.
 
 ### Web API Service
 - **URL**: http://localhost:8080
 - **Swagger UI**: http://localhost:8080/swagger
 - **Health Check**: http://localhost:8080/health
 - **Request Timeout**: 15 seconds
-- **Rate Limiting**: 10 requests/second, 100 requests/minute
-- **RabbitMQ Connection Pool**: 100 connections
+- **Rate Limiting**: 10 requests/second, 100 requests/minute (production)
+- **Security**: Headers, CORS, environment variables
 - **Channel Pool**: 20 channels
 - **Compression**: GZIP enabled for all responses
+- **Base Image**: Alpine Linux (secure)
 
 ## 📈 Scaling and Performance
 
@@ -212,25 +215,65 @@ See `load-test.js` for detailed test scenarios.
 
 ## 🔐 Security
 
-### Security Features
+### Security Features Implemented
 
-- **Rate Limiting**: Prevents API abuse and DoS attacks
-  - 10 requests per second
-  - 100 requests per minute
-- **Request Timeout**: Automatic timeout after 3 seconds
+#### Newly Added:
+- **SecurityCodeScan**: Static analysis for security vulnerabilities (added to all projects)
+- **Security Headers**: 
+  - X-Content-Type-Options: nosniff
+  - X-Frame-Options: DENY
+  - X-XSS-Protection: 1; mode=block
+  - Referrer-Policy: strict-origin-when-cross-origin
+- **CORS Policy**: Configured with allowed origins
+- **Rate Limiting Enabled in Production**: Now automatically active in production environment
+- **Environment-Based Credentials**: RabbitMQ credentials now use environment variables instead of hardcoded values
+- **Alpine Linux Base**: Updated Docker images to Alpine (0 OS vulnerabilities)
+- **Package Security Updates**: 
+  - Npgsql 8.0.4 (SQL Injection vulnerability fixed)
+  - Entity Framework Core 8.0.4 (security patches)
+
+#### Previously Implemented:
+- **Rate Limiting**: Prevents API abuse (configured, now enabled in production)
+- **Request Timeout**: Automatic timeout after 15 seconds
 - **Connection Pooling**: Prevents connection exhaustion
 - **Error Handling**: Graceful handling of invalid responses
 - **Health Monitoring**: Automatic connection health checks
+- **Circuit Breaker**: Protection against cascading failures
+- **Retry Policy**: Automatic retry for transient failures
 
-### Running Security Checks
+### Environment Variables
+
+Create a `.env` file for custom credentials:
 
 ```bash
-# Check for common security issues
-powershell -ExecutionPolicy Bypass -File .\security-check.ps1
+RABBITMQ_USERNAME=your_secure_username
+RABBITMQ_PASSWORD=your_secure_password
+```
+
+Or use the secure defaults:
+- Username: `rabbitmq`
+- Password: `SecurePass123!`
+
+### Running Security Scans
+
+```bash
+# Comprehensive security scan
+powershell -ExecutionPolicy Bypass -File .\security-scan.ps1
+
+# Check for vulnerable dependencies
+dotnet list package --vulnerable
+
+# Scan Docker images
+trivy image todo-api:latest
+
+# Scan docker-compose configuration
+trivy config docker-compose.yml
 
 # Run OWASP ZAP baseline scan
 docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost:8080
 ```
+
+See [SECURITY.md](SECURITY.md) for detailed security information.
 
 ## 🛠️ Development
 
@@ -267,7 +310,7 @@ powershell -ExecutionPolicy Bypass -File .\integration-test.ps1
 - Database persistence is functioning
 - Request/response flow through the entire system
 
-**Status**: ✅ All 128 unit tests passing | ✅ Basic integration tests passing
+**Status**: ✅ All 128 unit tests passing | ✅ All integration tests passing | ✅ All security fixes verified
 
 ### Project Structure
 
@@ -428,13 +471,19 @@ All services should show "Up" status with healthy indicators.
 - ✅ **Clean Architecture** following SOLID principles
 - ✅ **Advanced Error Handling** with retry policies and circuit breakers
 - ✅ **Performance Optimizations**:
-  - RabbitMQ connection pool (100 connections, 20 channels)
+  - RabbitMQ connection pool (20 channels)
   - Database connection pool (200 connections per worker)
   - HTTP response compression (GZIP)
   - Request timeout protection (15 seconds)
   - Horizontal scaling support (tested up to 10 workers)
-- ✅ **Security & Reliability**:
-  - Rate limiting (10 req/sec, 100 req/min)
+- ✅ **Security & Reliability** (Enhanced 2025-01-27):
+  - SecurityCodeScan static analysis (NEW)
+  - Security headers (X-Frame-Options, X-Content-Type-Options, XSS-Protection, Referrer-Policy) (NEW)
+  - CORS policy with allowed origins (NEW)
+  - Environment-based credential management (NEW)
+  - Alpine Linux base images (0 OS vulnerabilities) (NEW)
+  - Updated secure packages (Npgsql 8.0.4, EF Core 8.0.4) (NEW)
+  - Rate limiting enabled in production (UPDATED)
   - Circuit breaker protection
   - Enhanced JSON error handling
   - Connection health monitoring

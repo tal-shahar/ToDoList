@@ -1,5 +1,26 @@
 # Changelog
 
+## [Unreleased] - Security Hardening
+
+### Security
+- **Added SecurityCodeScan Analyzer**: Static analysis for security vulnerabilities in all projects
+- **Removed Hardcoded Credentials**: RabbitMQ credentials now use environment variables
+- **Secure Defaults**: Changed from `guest/guest` to `rabbitmq/SecurePass123!`
+- **Security Headers**: Added X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy
+- **CORS Policy**: Implemented configurable CORS with credential support
+- **Rate Limiting**: Enabled automatically in Production mode with stricter limits (10/sec, 100/min)
+- **Environment Variables**: Docker Compose now supports secure credential management
+
+### Changed
+- RabbitMQ credentials: Moved from hardcoded to environment-based configuration
+- Rate limiting: Now enabled in Production, stricter limits (10 req/sec, 100 req/min)
+- Security headers added to all responses
+- CORS policy configured for localhost origins
+
+### Added
+- `security-scan.ps1`: Comprehensive security scanning script
+- `SECURITY.md`: Detailed security tool recommendations
+
 ## [Unreleased] - Load Test Performance Fixes
 
 ### Fixed

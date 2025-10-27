@@ -24,8 +24,9 @@ services:
     image: rabbitmq:3.13-management-alpine
     container_name: todo-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-rabbitmq}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-SecurePass123!}
+      RABBITMQ_DEFAULT_VHOST: /
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -51,8 +52,10 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - RabbitMQ__HostName=rabbitmq
       - RabbitMQ__Port=5672
-      - RabbitMQ__Username=guest
-      - RabbitMQ__Password=guest
+      - RabbitMQ__Username=${RABBITMQ_USERNAME:-rabbitmq}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD:-SecurePass123!}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-rabbitmq}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-SecurePass123!}
     depends_on:
       postgres:
         condition: service_healthy
@@ -75,8 +78,8 @@ services:
       - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=todoapp;Username=postgres;Password=postgres
       - RabbitMQ__HostName=rabbitmq
       - RabbitMQ__Port=5672
-      - RabbitMQ__Username=guest
-      - RabbitMQ__Password=guest
+      - RabbitMQ__Username=${RABBITMQ_USERNAME:-rabbitmq}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD:-SecurePass123!}
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,8 +97,8 @@ services:
       - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=todoapp;Username=postgres;Password=postgres
       - RabbitMQ__HostName=rabbitmq
       - RabbitMQ__Port=5672
-      - RabbitMQ__Username=guest
-      - RabbitMQ__Password=guest
+      - RabbitMQ__Username=${RABBITMQ_USERNAME:-rabbitmq}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD:-SecurePass123!}
     depends_on:
       postgres:
         condition: service_healthy
